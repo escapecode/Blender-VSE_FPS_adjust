@@ -82,22 +82,21 @@ class SpeedMeta_UIPanel(bpy.types.Panel):
 	bl_label = "VSE FPS sync"
 	bl_space_type = 'PROPERTIES'
 	bl_region_type = 'WINDOW'
-	bl_context = "render"
+	bl_context = "minerender"
 	bl_options = {'DEFAULT_CLOSED'}
 
-	def panelAdd(self, context):
-		layout = self.layout
-		row = layout.row()
-		row.prop(bpy.context.scene, "prop_bFPSsync")
+	# def panelAdd(self, context):
+		# row = self.layout.row()
 
-		row = layout.row()
-		row.prop(bpy.context.scene, "prop_bfileAddMeta")
+		# row.prop(bpy.context.scene, "prop_bFPSsync")
+		# row.prop(bpy.context.scene, "prop_bfileAddMeta")
 
 	def draw(self, context):
 		row = self.layout.row()
 
-		row.label(text="FPS: " + str(context.scene.render.fps), icon='WORLD_DATA')
 		row.prop(bpy.context.scene, "prop_bFPSsync")
+		row.prop(bpy.context.scene, "prop_bfileAddMeta")
+		row.label(text="FPS: " + str(context.scene.render.fps), icon='WORLD_DATA')
 
 	def doPolling(self):
 		# part 1 --- auto meta new movie strips

@@ -1,5 +1,8 @@
 # Overview
-In Blender's Video Sequence Editor automatically wrap selected strips into meta with movie speed adjust to scene FPS
+This Blender add-on automates  the Video Sequence Editor when adjusting each strip's FPS to match your output render's FPS.  If you change your output render FPS, all associated strips will be updated.
+
+Using this add-on prevents movie strips playing too fast or slow, movies not synchronized with sounds, etc.  Also, audio and movie strips from an imported video are combined into a meta.  This makes it easier to do operations such as moving and cutting, since you only have to move a meta, not a movie and audio strip in unison.
+ Video Sequence Editor automatically wrap selected strips into meta with movie speed adjust to scene FPS
 
 Blender is FPS based not seconds based (like movies are).  This add-on handles the conversion.
 
@@ -10,22 +13,32 @@ In the Blender's Video Sequence Editor, there will be an option called **Adjust 
 ### Toolbar Button
 new button
 
-## Render Panel Parameter
-Also panel put under 'Render' properties section called **Auto-adjust VSE FPS**.  Enabling this feature will have Blender automatically update respective meta strip's speed when you update the FPS settings for the overall render.
+# Quickstart
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/01.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/01.jpg)
+Download  the .py file that is the same version as your Blender, as well as the vse_fps_adjust.png file.  Put these in your Blender scripts/addons folder.  Bring up your user preferences and enable the add-on.
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/02.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/02.jpg)
+The add-on will add a panel under Render > Properties
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/03.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/03.jpg)
+When importing movies to the sequencer timeline, the FPS of the video, could be different from the FPS you will render out to.  In this case, you can see that the audio strip looks longer than the movie strip (since the movie strip is not synchronized with the FPS you will be rendering at)
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/04.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/04.jpg)
+Using the menu option the audio and movie strips will be combined in a meta, and have it's speed adjusted automatically and correctly
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/05.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/05.jpg)
+Instead of using the menu option, there is a button on the panel bar
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/06.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/06.jpg)
+After using either the menu entry or button, you can now see that all strips are wrapped in a meta, and will play back at correct speed
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/07.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/07.jpg)
+Looking inside the meta (by selecting the meta, and hitting the tab key), you can see a speed effect strip that handles making your movie play at the correct FPS.  Exit out of the meta by hitting Tab
+[![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/08.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/08.jpg)
+Again notice the panel called "Meta matching Movie Speed to FPS".  It is located in the Render Properties section.  The "auto-adjust metas" checkbox is enabled.  So in this example, when the FPS value was changed from 23.98fps to 30fps, the meta you had created adjusted it's speed appropriately.  The real power of enabling this checkbox is when you have many movie strips with different speeds.  If you changed the FPS of your render, without this add-on, you would have to update all movie strips manually.
 
-## Search lookup
-Search on **Meta Adjust Video Speed to Render**
+# More details
+Please look in this Github project's Wiki.  The Wiki link is towards the top of this page
 
-# Enabling Add-on
-Make sure to download the .py script applicable to your version of Blender, and put it in your Blender add-ons folder
-
-In Blender, the add-on is located in the **Sequencer** section and is named **Meta Adjust Video Speed to Render**
-
-# Requirements
+# Add-on Requirements
 Exiftool is needed on your computer to use this add-on (e.g. apt-get install libimage-exiftool-perl_8.60-2), http://www.sno.phy.queensu.ca/~phil/exiftool/, https://smarnach.github.io/pyexiftool/ and rename to exiftool.exe or exiftool and put in C:\Windows or /usr/bin, etc. put exiftool.py in blender/2.7x/python/lib/ or other lib folder
 
 # Limitations
-This meta uses a Blender **Speed effect**, which has a multiply speed argument with only a precision to .00
+This add-on uses a Blender **Speed effect**, which has a granularity of only .00.  With long playing videos and extremely varying FPS values different from the output render, the output playback might be off.
 
 # Notes
 This script will opefully be updated on https://developer.blender.org/diffusion/BAC/repository/master/
