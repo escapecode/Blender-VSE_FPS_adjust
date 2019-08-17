@@ -52,7 +52,6 @@ documentation, if there is a demand for this add-on, or if such is requested by 
 
 * [Install](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/Installation)
 * [Configure](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/Configuration-Settings)
-* [User Configs](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/User-Configs)
 * [Frequently Asked Questions](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/FAQ)
 
 # Limitations
@@ -63,8 +62,7 @@ This script will opefully be updated on https://developer.blender.org/diffusion/
 
 # License
 
-This add-on is licensed under the terms of the [GPLv3](LICENSE.GPL) and
-[BSD](LICENSE.BSD) licenses.
+This add-on is CC0 [licensed](https://github.com/escapecode/Blender-VSE_FPS_adjust/LICENSE).  When applicable, this license is superceded by Blender's licensing.
 
 # Contributing
 
@@ -75,7 +73,5 @@ To submit code changes, please open pull requests against [the GitHub repository
    * Describe how the changes affect existing behaviour
    * Describe how you tested and validated your changes
    * Include any relevant screenshots/evidence demonstrating that the changes work and have been tested
- * Any new source files should include a GPLv3 license header
- * Any contributed code must be GPLv3 licensed
 
 [wiki]: https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki
