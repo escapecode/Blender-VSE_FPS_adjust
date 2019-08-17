@@ -1,18 +1,15 @@
 # Overview
 [![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/00.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/00.jpg)
+
 This Blender add-on automates  the Video Sequence Editor when adjusting each strip's FPS to match your output render's FPS.  If you change your output render FPS, all associated strips will be updated.
 
 Using this add-on prevents movie strips playing too fast or slow, movies not synchronized with sounds, etc.  Also, audio and movie strips from an imported video are combined into a meta.  This makes it easier to do operations such as moving and cutting, since you only have to move a meta, not a movie and audio strip in unison.
  Video Sequence Editor automatically wrap selected strips into meta with movie speed adjust to scene FPS
 
-Blender is FPS based not seconds based (like movies are).  This add-on handles the conversion.
+So why is it this way?  Blender is a renderer first before it is a video editor.  Renderers are **frame** based (eg "I want 50 frames rendered and I don't want to think about syncing the render with other videos").  Video editors are **time** based (eg "I have 5 videos at different framerates.  I want them to run them synchronously and have them run at the same speed....I don't care how many frames there are"). This add-on helps bridge the gap between renderers and video editors.
 
-# Features
-## Video Editor
-### Strips Menu Option
-In the Blender's Video Sequence Editor, there will be an option called **Adjust Video's Speed to Render FPS via Meta**
-### Toolbar Button
-new button
+# Add-on Requirements
+Exiftool is needed on your computer to use this add-on (e.g. apt-get install libimage-exiftool-perl_8.60-2), http://www.sno.phy.queensu.ca/~phil/exiftool/, https://smarnach.github.io/pyexiftool/ and rename to exiftool.exe or exiftool and put in C:\Windows or /usr/bin, etc. put exiftool.py in blender/2.7x/python/lib/ or other lib folder
 
 # Quickstart
 [![screenshot](https://github.com/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/01.jpg)](https://raw.github.com/wiki/escapecode/Blender-VSE_FPS_adjust/blob/master/screenshots/01.jpg)
@@ -49,16 +46,13 @@ Again notice the panel called "Meta matching Movie Speed to FPS".  It is located
 
 # Documentation
 
-The [GitHub Wiki](https://github.com/escapecode/Blender-addon-view3d_nav_buttons/wiki) can serve as a central hub for all of
+The [GitHub Wiki](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki) can serve as a central hub for all of
 documentation, if there is a demand for this add-on, or if such is requested by the public.  This has not been done at this time, since Blender has an add-on section on it's website (which might be used). Possible Quick links:
 
-* [Install](https://github.com/escapecode/Blender-addon-view3d_nav_buttons/wiki/Installation)
-* [Configure](https://github.com/escapecode/Blender-addon-view3d_nav_buttons/wiki/Configuration-Settings)
-* [User Configs](https://github.com/escapecode/Blender-addon-view3d_nav_buttons/wiki/User-Configs)
-* [Frequently Asked Questions](https://github.com/escapecode/Blender-addon-view3d_nav_buttons/wiki/FAQ)
-
-# Add-on Requirements
-Exiftool is needed on your computer to use this add-on (e.g. apt-get install libimage-exiftool-perl_8.60-2), http://www.sno.phy.queensu.ca/~phil/exiftool/, https://smarnach.github.io/pyexiftool/ and rename to exiftool.exe or exiftool and put in C:\Windows or /usr/bin, etc. put exiftool.py in blender/2.7x/python/lib/ or other lib folder
+* [Install](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/Installation)
+* [Configure](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/Configuration-Settings)
+* [User Configs](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/User-Configs)
+* [Frequently Asked Questions](https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki/FAQ)
 
 # Limitations
 This add-on uses a Blender **Speed effect**, which has a granularity of only .00.  With long playing videos and extremely varying FPS values different from the output render, the output playback might be off.
@@ -73,7 +67,7 @@ This add-on is licensed under the terms of the [GPLv3](LICENSE.GPL) and
 
 # Contributing
 
-To submit code changes, please open pull requests against [the GitHub repository](https://github.com/escapecode/Blender-addon-view3d_nav_buttons/edit/master/README.md). Patches submitted in issues, email, or elsewhere will likely be ignored. Here's some general guidelines when submitting PRs:
+To submit code changes, please open pull requests against [the GitHub repository](https://github.com/escapecode/Blender-VSE_FPS_adjust/edit/master/README.md). Patches submitted in issues, email, or elsewhere will likely be ignored. Here's some general guidelines when submitting PRs:
 
  * In your pull request, please:
    * Describe the changes, why they were necessary, etc
@@ -83,4 +77,4 @@ To submit code changes, please open pull requests against [the GitHub repository
  * Any new source files should include a GPLv3 license header
  * Any contributed code must be GPLv3 licensed
 
-[wiki]: https://github.com/escapecode/Blender-addon-view3d_nav_buttons/wiki
+[wiki]: https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki
