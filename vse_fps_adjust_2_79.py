@@ -13,6 +13,7 @@ bl_info = {
 }
 
 import bpy
+import os, sys
 
 try:
 	import exiftool
@@ -22,9 +23,29 @@ except ImportError:
 
 from bpy.types import Menu, Panel
 
+bpy.types.Scene.FPS_last = 0
+
+bpy.types.Scene.prop_bFPSsync = bpy.props.BoolProperty(
+	name="Auto-adjust VSE FPS",
+	description="Automatically adjust associated VSE Meta speeds when Render FPS adjusted",
+	default=False,
+	# update=checkFPS
+)
+
+def checkFPS(self):
+	if bpy.context.scene.prop_bFPSsync== True and bpy.context.scene.render.fps != bpy.types.Scene.FPS_last:
+		print("\n**** FPS changed to " + str(bpy.context.scene.render.fps))
+		bpy.types.Scene.FPS_last = bpy.context.scene.render.fps
+
+		if hasattr(bpy.context.scene.sequence_editor, "sequences"):
+			MetaSpeedtoRenderFPS_metas_update()
+
+bpy.app.handlers.scene_update_post.append(checkFPS)
+
+
 # Universally add this script's functionality to Blender (for use on menu entries, command search, buttons, etc.)
 class MetaSpeedtoRenderFPS(bpy.types.Operator):
-	"""Wrap selected strips in meta with movie strip speed adjusted to scene FPS"""	  # blender will use this text as a tooltip for menu items and buttons (which in not language normalized)
+	"""Wrap selected strips in meta with movie strip speed adjusted to scene FPS"""	  # blender will use this text as a tooltip for menu items and buttons (which is not language normalized)
 	bl_idname = "sequencer.movietofpsmeta"		# unique identifier for buttons and menu items to reference.
 	bl_label = "Meta Adjust Video Speed to Render"		 # display name in the interface.
 	bl_space_type = "SEQUENCE_EDITOR"
@@ -47,42 +68,36 @@ class MetaSpeedtoRenderFPS_Panel(bpy.types.Panel):
 	bl_context = "render"
 	bl_options = {'DEFAULT_CLOSED'}
 
-	FPS_last = 0
-
-	bpy.types.Scene.prop_bFPSsync = bpy.props.BoolProperty(
-		name="Auto-adjust VSE FPS",
-		description="Automatically adjust associated VSE Meta speeds when Render FPS adjusted",
-		default=False
-	)
-
-	def checkFPS(self):
-		if bpy.context.scene.prop_bFPSsync== True and bpy.context.scene.render.fps != self.FPS_last:
-			print("\n**** FPS changed to " + str(bpy.context.scene.render.fps))
-			self.FPS_last = bpy.context.scene.render.fps
-
-			if hasattr(bpy.context.scene.sequence_editor, "sequences"):
-				MetaSpeedtoRenderFPS_metas_update()
-
 	def RenderVSEPanelAdd(self, context):
-		self.FPS_last = bpy.context.scene.render.fps
+		bpy.types.Scene.FPS_last = bpy.context.scene.render.fps
 
 		layout = self.layout
 		row = layout.row()
 		row.prop(bpy.context.scene, "prop_bFPSsync")
 
 	def draw(self, context):
+		row = self.layout.row()
+
+		row.label(text="FPS: " + str(context.scene.render.fps), icon='WORLD_DATA')
+		row.prop(bpy.context.scene, "prop_bFPSsync")
+	
+	# Add this property to the Render panel in the Dimensions tab
+	bpy.types.RENDER_PT_dimensions.append(RenderVSEPanelAdd)
+
+class MetaSpeedtoRenderFPS_Buttonhandler(bpy.types.Header):
+	bl_space_type = 'SEQUENCE_EDITOR'
+
+	@classmethod
+	def poll(self, context):
+	   return
+
+	def draw(self, context):
 		layout = self.layout
 
-		row = layout.row()
-		row.label(text="FPS: " + str(context.scene.render.fps), icon='WORLD_DATA')
+		icons = icon_collections["main"]
 
-		row = layout.row()
-		row.prop(bpy.context.scene, "prop_bFPSsync")
-
-		self.checkFPS(self)
-		# bpy.app.handlers.scene_update_post.append(checkFPS)
-
-	bpy.types.RENDER_PT_dimensions.append(RenderVSEPanelAdd)
+		row = layout.row(1)
+		row.operator("sequencer.movietofpsmeta",  text="", icon_value= icons.get("stripFPSrender").icon_id);
 
 
 def MetaSpeedtoRenderFPS_meta_create(selection):
@@ -90,6 +105,7 @@ def MetaSpeedtoRenderFPS_meta_create(selection):
 	
 	# check to make sure exiftool works
 	context1 = bpy.context.area.type
+	context_orig = context1
 	if context1 != 'SEQUENCE_EDITOR':	# NOTE: bpy.context.area.type = '?'
 		print("temporarily switching context where cursor is off of " + str(context1) + " to SEQUENCE***")
 		bpy.context.area.type = 'SEQUENCE_EDITOR'	# NOTE: see overrides at 		for 
@@ -99,9 +115,9 @@ def MetaSpeedtoRenderFPS_meta_create(selection):
 	if len(metastrips) > 0:
 		for win in bpy.data.window_managers[0].windows:
 			for area in [area for area in win.screen.areas if area.type=="SEQUENCE_EDITOR"]:
-				context = [region for region in area.regions if region.type=="WINDOW"][0]	# FIXME: context doesn't have a default value
-				print(context)
-		context = {'window': bpy.context.window, 'screen': screen, 'area': area, 'region': region, 'scene': bpy.context.scene}
+				region = [region for region in area.regions if region.type=="WINDOW"][0]	# FIXME: context doesn't have a default value
+				print(region)
+		context = {'window': bpy.context.window, 'screen': bpy.context.screen, 'area': area, 'region': region, 'scene': bpy.context.scene}
 		context1 = bpy.context.area.type
 		if context1 != 'SEQUENCE_EDITOR':	# NOTE: bpy.context.area.type = '?'
 			print("temporarily switching context where cursor is off of " + str(context1) + " to SEQUENCE***")
@@ -110,13 +126,13 @@ def MetaSpeedtoRenderFPS_meta_create(selection):
 			if context1 != 'SEQUENCE_EDITOR':	# NOTE: bpy.context.area.type = '?'
 				print("temporarily switching context where cursor is off of " + str(context1) + " to SEQUENCE***")
 				bpy.context.area.type = 'SEQUENCE_EDITOR'	# NOTE: see overrides at 		for 
-			print("--- opening " + my_meta_strip.name)
+			print("\n--- opening " + my_meta_strip.name)
 			#context.action='DESELECT'
 			bpy.ops.sequencer.select_all(context, action='DESELECT')	# FIXME need context override
 			my_meta_strip.select = True
 			bpy.ops.sequencer.meta_toggle(context)
 			my_meta_strip.select = False
-			bpy.ops.sequencer.select_all(bpy.ops.sequencer.select_all, action='SELECT')
+			bpy.ops.sequencer.select_all(action='SELECT')
 			print("should be inside meta with first non-meta strip (" + bpy.context.selected_sequences[0].name + ")")
 			MetaSpeedtoRenderFPS_meta_create(bpy.context.selected_sequences)   # fixme
 
@@ -125,7 +141,7 @@ def MetaSpeedtoRenderFPS_meta_create(selection):
 			if len(speedstrips) > 0:
 				frames = speedstrips[0].frame_final_duration
 				print("will set meta frame number to " + str(frames))
-			print("--- closing meta" + my_meta_strip.name)
+			print("--- closing meta" + my_meta_strip.name + "\n")
 			bpy.ops.sequencer.select_all(action='DESELECT')
 			my_meta_strip.select = True
 			bpy.ops.sequencer.meta_toggle()
@@ -250,6 +266,11 @@ def MetaSpeedtoRenderFPS_meta_create(selection):
 
 		et.terminate()	# TODO make more efficient by leaving on or using different exiftool (probably from extra)
 
+	if context_orig != 'SEQUENCE_EDITOR' and context_orig != '':
+		print("switching context back to " + context_orig)
+		bpy.context.area.type = context_orig
+
+
 def MetaSpeedtoRenderFPS_metas_update():
 	# TODO: might have to go to top level of vse (exit out of a meta)
 	bpy.ops.sequencer.select_all(action='SELECT')
@@ -275,12 +296,19 @@ def MetaSpeedtoRenderFPS_manual_add():
 	)
 	return url_manual_prefix, url_manual_mapping
 
+icon_collections = {}
+
 def register():
+
 	bpy.utils.register_class(MetaSpeedtoRenderFPS_Panel)
 	bpy.utils.register_class(MetaSpeedtoRenderFPS)
 	bpy.utils.register_manual_map(MetaSpeedtoRenderFPS_manual_add)
 	bpy.types.SEQUENCER_MT_strip.prepend(MetaSpeedtoRenderFPS_menu_add)
-	# TODO: button
+
+	vse_fpsmeta_buttons = bpy.utils.previews.new()
+	vse_fpsmeta_buttons.load("stripFPSrender", os.path.join(os.path.dirname(__file__), "vse_fps_adjust.png"), 'IMAGE')
+	icon_collections['main'] = vse_fpsmeta_buttons
+	bpy.utils.register_class(MetaSpeedtoRenderFPS_Buttonhandler)
 
 def unregister():
 	bpy.utils.unregister_class(MetaSpeedtoRenderFPS_Panel)
@@ -288,7 +316,13 @@ def unregister():
 	bpy.utils.unregister_manual_map(MetaSpeedtoRenderFPS_manual_add)
 	bpy.types.SEQUENCER_MT_strip.remove(MetaSpeedtoRenderFPS_menu_add)
 
+	for icon in icon_collections.values():
+		bpy.utils.previews.remove(icon)
+	icon_collections.clear()
+
+	bpy.utils.unregister_class(MetaSpeedtoRenderFPS_Buttonhandler)
+
 # Allow running this script directly from Blender's text editor
 # (to test the addon without having to install it)
 if __name__ == "__main__":
-    register()
+	register()
