@@ -1,124 +1,99 @@
 bl_info = {
-	"name": "Movie clip Time to FPS",
-	"author": "escape_code",
-	"version": (1, 0),
-	"blender": (2, 76, 0),
-	"location": "Sequencer > Strip",
-	"description": "Automatically wrap selected strips into meta with movie speed adjust to scene FPS\nBlender is FPS based not seconds based (like movies are).  This add-on handles the conversion.\n  Exiftool is needed on your computer to use this add-on (e.g. apt-get install libimage-exiftool-perl_8.60-2), http://www.sno.phy.queensu.ca/~phil/exiftool/, https://smarnach.github.io/pyexiftool/ and rename to exiftool.exe or exiftool and put in C:\Windows or /usr/bin, etc. put exiftool.py in blender/2.7x/python/lib/ or other lib folder\n Also panel put under 'Render' properties section.  https://developer.blender.org/diffusion/BAC/browse/master/sequencer_extra_actions/",
-	"warning": "Meta functionality still being worked on.  Speed effect has a multiply speed argument with only a precision to .00",
-	"wiki_url": "http://localhost/",
-	"category": "Sequencer"
+	"name": "Meta Adjust Video Speed to Render",
+	"author": "escapecode",
+	"version": (2, 79, 1),
+	"blender": (2, 79, 0),
+	"category": "Sequencer",
+	"location": "Sequencer > Strip, Render Panel",
+	"description": "Adjust video clip's speed to match Render FPS",
+	"warning": "",
+	"wiki_url": "https://github.com/escapecode/Blender-VSE_FPS_adjust/wiki",
+	'tracker_url': 'https://github.com/escapecode/Blender-VSE_FPS_adjust/issues',
+	'support': 'TESTING'
 }
 
 import bpy
 
-try:	# TODO: add feature to alert/install exiftool and exiftool.py
+try:
 	import exiftool
 except ImportError:
+	print("\nExiftool is needed on your computer to use this add-on (e.g. apt-get install libimage-exiftool-perl_8.60-2), http://www.sno.phy.queensu.ca/~phil/exiftool/, https://smarnach.github.io/pyexiftool/ and rename to exiftool.exe or exiftool and put in C:\Windows or /usr/bin, etc. put exiftool.py in blender/2.7x/python/lib/ or other lib folder\n")
 	sys.exit(0)
-# --------------------------
-bpy.types.Scene.use_VSEfps = bpy.props.BoolProperty(	# TODO: move to a valid key location
-    name="VSE to FPS",
-    description="adjust VSE video clip's FPS to match output FPS",
-    default=False
-)
-
-def RenderVSEPanelAdd(self, context):
-	layout = self.layout
-	row = layout.row()
-	#row.label(text="hi")
-	row.prop(bpy.context.scene, "use_VSEfps")
-
-bpy.types.RENDER_PT_dimensions.append(RenderVSEPanelAdd)
-
-# --------------------------
 
 from bpy.types import Menu, Panel
 
-def pollHandler(scene):
-	checkFPS()
-
-	#if bpy.ops.sequencer.movie_strip_add.poll() is True:
-		#print("yipee")
-
-bpy.app.handlers.scene_update_post.append(pollHandler)	# FIXME: maybe use a better trigger/polling mechanism
-
-# --------------------------
-bpy.types.Scene.last_FPS = bpy.context.scene.render.fps
-
-def checkFPS():
-	if bpy.context.scene.use_VSEfps == True and bpy.context.scene.render.fps != bpy.types.Scene.last_FPS:
-		print("\n**** FPS changed to " + str(bpy.context.scene.render.fps))
-		bpy.types.Scene.last_FPS = bpy.context.scene.render.fps
-
-		if hasattr(bpy.context.scene.sequence_editor, "sequences"):
-			# for i in bpy.context.scene.sequence_editor.sequences:
-			#	print("metastrip " . i.name)
-			updateAllMetas()
-
-# used for making strip menu option
-class MovieTimeToFPS(bpy.types.Operator):
+# Universally add this script's functionality to Blender (for use on menu entries, command search, buttons, etc.)
+class MetaSpeedtoRenderFPS(bpy.types.Operator):
 	"""Wrap selected strips in meta with movie strip speed adjusted to scene FPS"""	  # blender will use this text as a tooltip for menu items and buttons (which in not language normalized)
 	bl_idname = "sequencer.movietofpsmeta"		# unique identifier for buttons and menu items to reference.
-	bl_label = "Movie Time to FPS meta"		 # display name in the interface.
-	#bl_options = {'REGISTER', 'UNDO'}  # enable undo for the operator.
+	bl_label = "Meta Adjust Video Speed to Render"		 # display name in the interface.
 	bl_space_type = "SEQUENCE_EDITOR"
 	bl_region_type = 'WINDOW'
 	#bl_context = "object"
+	#bl_options = {'REGISTER', 'UNDO'}  # enable undo for the operator.
 
 	def execute(self, context):		# execute() is called by blender when running the operator.
-		# check to make sure exiftool works
-		print("MovieTimeToFPS")
-		createSpeedMeta(bpy.context.selected_sequences)
+		print("MetaSpeedtoRenderFPS executed")
+		MetaSpeedtoRenderFPS_meta_create(bpy.context.selected_sequences)
 
 		return {'FINISHED'}			# this lets blender know the operator finished successfully.
 
-
-class VSEtoFPSPanel(bpy.types.Panel):
+class MetaSpeedtoRenderFPS_Panel(bpy.types.Panel):
 	"""Creates a new Panel in the Render properties tab"""
-	bl_label = "VSE FPS sync"
 	bl_idname = "RENDER_PT_VSEtoFPS"
-	bl_options = {'DEFAULT_CLOSED'}
+	bl_label = "VSE FPS sync"
 	bl_space_type = 'PROPERTIES'
 	bl_region_type = 'WINDOW'
 	bl_context = "render"
-	last_FPS = bpy.context.scene.render.fps
+	bl_options = {'DEFAULT_CLOSED'}
 
-	my_bool = bpy.props.BoolProperty(name="Toggle Option")
+	FPS_last = 0
 
-	def draw(self, context):
-		# print (context.scene.render.fps)
+	bpy.types.Scene.prop_bFPSsync = bpy.props.BoolProperty(
+		name="Auto-adjust VSE FPS",
+		description="Automatically adjust associated VSE Meta speeds when Render FPS adjusted",
+		default=False
+	)
+
+	def checkFPS(self):
+		if bpy.context.scene.prop_bFPSsync== True and bpy.context.scene.render.fps != self.FPS_last:
+			print("\n**** FPS changed to " + str(bpy.context.scene.render.fps))
+			self.FPS_last = bpy.context.scene.render.fps
+
+			if hasattr(bpy.context.scene.sequence_editor, "sequences"):
+				MetaSpeedtoRenderFPS_metas_update()
+
+	def RenderVSEPanelAdd(self, context):
+		self.FPS_last = bpy.context.scene.render.fps
 
 		layout = self.layout
+		row = layout.row()
+		row.prop(bpy.context.scene, "prop_bFPSsync")
+
+	def draw(self, context):
+		layout = self.layout
+
 		row = layout.row()
 		row.label(text="FPS: " + str(context.scene.render.fps), icon='WORLD_DATA')
 
 		row = layout.row()
-		#row.prop(context.scene.render, "fps")
-		#row.prop(context.scene.render, "VSEtoFPSPanel")
-		row.prop(bpy.context.scene, "use_VSEfps")
+		row.prop(bpy.context.scene, "prop_bFPSsync")
 
-		scn = context.scene
+		self.checkFPS(self)
+		# bpy.app.handlers.scene_update_post.append(checkFPS)
 
-		# if bpy.context.scene.render.fps != self.last_FPS:
-			# print("FPS changed to " + str(bpy.context.scene.render.fps))
-			# self.last_FPS = bpy.context.scene.render.fps
-#
-			# if hasattr(bpy.context.scene.sequence_editor, "sequences"):
-				# # for i in bpy.context.scene.sequence_editor.sequences:
-				# #	print("metastrip " . i.name)
-				# updateAllMetas()
+	bpy.types.RENDER_PT_dimensions.append(RenderVSEPanelAdd)
 
-# self.report({'ERROR'}, "My message")
 
-def createSpeedMeta(selection):
-	print("createSpeedMeta")
-
+def MetaSpeedtoRenderFPS_meta_create(selection):
+	print("MetaSpeedtoRenderFPS_meta_create")
+	
+	# check to make sure exiftool works
 	context1 = bpy.context.area.type
 	if context1 != 'SEQUENCE_EDITOR':	# NOTE: bpy.context.area.type = '?'
 		print("temporarily switching context where cursor is off of " + str(context1) + " to SEQUENCE***")
 		bpy.context.area.type = 'SEQUENCE_EDITOR'	# NOTE: see overrides at 		for 
-
+	
 	# if meta in selected
 	metastrips = [my_strip for my_strip in selection if my_strip.type == 'META' and my_strip.name.find("meta_") != -1]
 	if len(metastrips) > 0:
@@ -143,7 +118,7 @@ def createSpeedMeta(selection):
 			my_meta_strip.select = False
 			bpy.ops.sequencer.select_all(bpy.ops.sequencer.select_all, action='SELECT')
 			print("should be inside meta with first non-meta strip (" + bpy.context.selected_sequences[0].name + ")")
-			createSpeedMeta(bpy.context.selected_sequences)   # fixme
+			MetaSpeedtoRenderFPS_meta_create(bpy.context.selected_sequences)   # fixme
 
 			bpy.ops.sequencer.select_all(action='SELECT')
 			speedstrips = [my_strip for my_strip in bpy.context.selected_sequences if my_strip.type == 'SPEED' and my_strip.name.find("speed_") != -1]
@@ -187,7 +162,7 @@ def createSpeedMeta(selection):
 				et.start()
 
 		# step 1a --- EXIF
-		fps_scene = bpy.context.scene.render.fps
+		fps_scene = bpy.context.scene.render.fps / bpy.context.scene.render.fps_base
 
 		for this_movie in strips_movie:
 			# step 1 --- EXIF lookup and get speed multiplier
@@ -214,7 +189,7 @@ def createSpeedMeta(selection):
 			bpy.ops.sequencer.select_all(action='SELECT')
 			effect_speed_this_movie = [my_strip for my_strip in bpy.context.selected_sequences if my_strip.type == 'SPEED' and my_strip.name.find("speed_") != -1]
 			if len(effect_speed_this_movie) == 0:
-				print(" adding speed with " + bpy.path.abspath(this_movie.filepath))
+				print(" adding speed with " + this_movie.filepath)
 				bpy.ops.sequencer.select_all(action='DESELECT')
 				this_movie.select = True
 				# note that the newly made effect strip will be selected, so we don't have to add it to "selection"
@@ -224,9 +199,10 @@ def createSpeedMeta(selection):
 					print("temporarily switching context where cursor is off of " + str(context1) + " to SEQUENCE***")
 					bpy.context.area.type = 'SEQUENCE_EDITOR'	# NOTE: see overrides at https://www.blender.org/api/blender_python_api_2_77_release/bpy.ops.html for alternative
 
-				print("should have " + this_movie.name)
-				print(bpy.context.selected_sequences)	# NOTE: [bpy.data.scenes['Scene'].sequence_editor.sequences_all["0001-0283.001"]]
-				bpy.ops.sequencer.effect_strip_add(filepath=bpy.path.abspath(this_movie.filepath), type='SPEED')	# fixme this needs poll
+				# print("should have " + this_movie.name)
+				# print("should have " +this_movie.filepath)
+				# print(bpy.context.selected_sequences)	# NOTE: [bpy.data.scenes['Scene'].sequence_editor.sequences_all["0001-0283.001"]]
+				bpy.ops.sequencer.effect_strip_add(type='SPEED')	# fixme this needs poll
 				bpy.context.selected_sequences[0].name = "speed_" + str(this_movie.name)
 				bpy.context.area.type = context1
 			else:
@@ -250,6 +226,7 @@ def createSpeedMeta(selection):
 							print("found speed_" + str(this_movie.name))
 						else:
 							print("couldn't find speed effect for movie speed_" + str(this_movie.name))
+							# FIXME: some speed effect names are truncated based off of this_movie.name, and causes the effect not to be found
 			else:
 				bpy.ops.sequencer.select_all(action='SELECT')
 				metastrips = [my_strip for my_strip in selection if my_strip.type == 'META']
@@ -273,45 +250,45 @@ def createSpeedMeta(selection):
 
 		et.terminate()	# TODO make more efficient by leaving on or using different exiftool (probably from extra)
 
-def updateAllMetas():
+def MetaSpeedtoRenderFPS_metas_update():
 	# TODO: might have to go to top level of vse (exit out of a meta)
 	bpy.ops.sequencer.select_all(action='SELECT')
 	#bpy.ops.sequencerextra.select_all_by_type(type='META')
 	metastrips = [my_strip for my_strip in bpy.context.sequences if my_strip.type == 'META' and my_strip.name.find("meta_") != -1]
-	print("updateAllMetas with " + str(len(metastrips)) + " strips")
-	createSpeedMeta(metastrips)
+	print("MetaSpeedtoRenderFPS_metas_update with " + str(len(metastrips)) + " strips")
+	MetaSpeedtoRenderFPS_meta_create(metastrips)
 
-# Blender UI and app integration
-def my_object_button_add(self, context):
+# Adds VSE > strip menu entry
+def MetaSpeedtoRenderFPS_menu_add(self, context):
 	self.layout.operator(
-		MovieTimeToFPS.bl_idname,
-		text="Selected Movie Time to FPS meta",
-		icon='PLUGIN')
+		MetaSpeedtoRenderFPS.bl_idname,
+		text="Adjust Video's Speed to Render FPS via Meta",
+		icon='PLUGIN'
+	)
 	self.layout.separator()
 
-
-# This allows you to right click on a button and link to the manual
-def my_object_manual_add():
-	url_manual_prefix = "http://wiki.blender.org/index.php/Doc:2.6/Manual/"
+# Allows right click on a button and link to the manual
+def MetaSpeedtoRenderFPS_manual_add():
+	url_manual_prefix = "https://github.com/escapecode/Blender-VSE_FPS_adjust"
 	url_manual_mapping = (
 		("bpy.ops.mesh.add_object", "Modeling/Objects"),
-		)
+	)
 	return url_manual_prefix, url_manual_mapping
 
-# registeration
 def register():
-	bpy.utils.register_class(VSEtoFPSPanel)
-	bpy.utils.register_class(MovieTimeToFPS)
-	bpy.utils.register_manual_map(my_object_manual_add)
-	bpy.types.SEQUENCER_MT_strip.prepend(my_object_button_add)
+	bpy.utils.register_class(MetaSpeedtoRenderFPS_Panel)
+	bpy.utils.register_class(MetaSpeedtoRenderFPS)
+	bpy.utils.register_manual_map(MetaSpeedtoRenderFPS_manual_add)
+	bpy.types.SEQUENCER_MT_strip.prepend(MetaSpeedtoRenderFPS_menu_add)
+	# TODO: button
 
 def unregister():
-	bpy.utils.unregister_class(VSEtoFPSPanel)
-	bpy.utils.unregister_class(MovieTimeToFPS)
-	bpy.utils.unregister_manual_map(my_object_manual_add)
-	bpy.types.SEQUENCER_MT_strip.remove(my_object_button_add)
+	bpy.utils.unregister_class(MetaSpeedtoRenderFPS_Panel)
+	bpy.utils.unregister_class(MetaSpeedtoRenderFPS)
+	bpy.utils.unregister_manual_map(MetaSpeedtoRenderFPS_manual_add)
+	bpy.types.SEQUENCER_MT_strip.remove(MetaSpeedtoRenderFPS_menu_add)
 
-# This allows you to run the script directly from blenders text editor
-# to test the addon without having to install it.
+# Allow running this script directly from Blender's text editor
+# (to test the addon without having to install it)
 if __name__ == "__main__":
     register()
