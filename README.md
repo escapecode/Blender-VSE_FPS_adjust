@@ -6,7 +6,7 @@ This Blender add-on automates  the Video Sequence Editor when adjusting each str
 Using this add-on prevents movie strips playing too fast or slow, movies not synchronized with sounds, etc.  Also, audio and movie strips from an imported video are combined into a meta.  This makes it easier to do operations such as moving and cutting, since you only have to move a meta, not a movie and audio strip in unison.
  Video Sequence Editor automatically wrap selected strips into meta with movie speed adjust to scene FPS
 
-## Why do I have to adjust all of my movie framerates
+## Blender's issue with movies at different framerates
 Blender is a renderer first before it is a video editor.  Renderers are **frame** based (eg "I want 50 frames rendered and I don't want to think about syncing the render with other videos").  Video editors are **time** based (eg "I have 5 videos at different framerates.  I want them to run them synchronously and have them run at the same speed....I don't care how many frames there are"). This add-on helps bridge the gap between renderers and video editors.
 
 ## Add-on Requirements
